@@ -1,10 +1,10 @@
 {
-  "id": "/web-scan/",
+  "id": "https://alexthegreatwhite.github.io/web-scan/",
   "name": "Paris Store - Scan Web",
   "short_name": "PS Scan",
   "description": "Scanner de code-barres et fiches produits Paris Store",
-  "start_url": "/web-scan/",
-  "scope": "/web-scan/",
+  "start_url": "https://alexthegreatwhite.github.io/web-scan/index.html",
+  "scope": "https://alexthegreatwhite.github.io/web-scan/",
   "display": "standalone",
   "display_override": [
     "fullscreen",
@@ -16,13 +16,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/web-scan/icons/icon-192.png",
+      "src": "https://alexthegreatwhite.github.io/web-scan/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/web-scan/icons/icon-512.png",
+      "src": "https://alexthegreatwhite.github.io/web-scan/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
