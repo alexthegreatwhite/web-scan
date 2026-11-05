@@ -66,11 +66,13 @@ export function App() {
       {/* En-tête mobile aéré et jamais écrasé */}
       <header className="relative z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          {/* Logo et Nom Magasin */}
+          {/* Logo Panda Kawaii et Nom Magasin */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-red-500 flex items-center justify-center font-black text-white text-sm shadow-md shadow-red-950/50 shrink-0">
-              PS
-            </div>
+            <img
+              src="./icons/icon-192.png"
+              alt="Logo Panda"
+              className="w-8 h-8 rounded-xl object-cover shadow-md shadow-pink-950/40 shrink-0"
+            />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 leading-none">
                 <span className="font-bold text-white text-sm tracking-tight truncate">Paris Store</span>
