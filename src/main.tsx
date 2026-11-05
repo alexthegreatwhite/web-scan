@@ -6,7 +6,7 @@ import './index.css';
 // Enregistrement du Service Worker PWA (requis pour affichage Standalone sans barre de navigation)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
       console.warn('Erreur enregistrement Service Worker:', err);
     });
   });

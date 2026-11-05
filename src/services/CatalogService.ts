@@ -13,7 +13,7 @@ class CatalogService {
 
     this.loadPromise = (async () => {
       try {
-        const res = await fetch('/data/catalog.json');
+        const res = await fetch('./data/catalog.json');
         if (!res.ok) {
           throw new Error(`Erreur chargement catalogue: ${res.statusText}`);
         }
