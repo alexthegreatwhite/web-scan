@@ -5,7 +5,7 @@ import { Article, ScanMode } from './types/product';
 import { CameraScanner } from './components/CameraScanner';
 import { ProductCard } from './components/ProductCard';
 import { ManualInput } from './components/ManualInput';
-import { AlertCircle, Search, X, Maximize, Minimize } from 'lucide-react';
+import { AlertCircle, Search, X } from 'lucide-react';
 
 export function App() {
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -13,7 +13,6 @@ export function App() {
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>('auto');
 
   // Déverrouillage audio sur la première interaction utilisateur
@@ -30,22 +29,6 @@ export function App() {
       window.removeEventListener('click', unlockAudio);
     };
   }, []);
-
-  useEffect(() => {
-    const handleFsChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
-  }, []);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  };
 
   const toggleScanMode = () => {
     setScanMode((prev) => (prev === 'auto' ? 'trigger' : 'auto'));
@@ -113,20 +96,6 @@ export function App() {
             <div className="hidden sm:block w-64">
               <ManualInput onSearch={handleCodeFound} disabled={!catalogLoaded} />
             </div>
-
-            {/* Bouton Plein Écran */}
-            <button
-              onClick={toggleFullscreen}
-              className={`p-2 rounded-xl border transition active:scale-95 ${
-                isFullscreen
-                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
-                  : 'bg-slate-900 text-slate-300 border-slate-700/80 hover:text-white'
-              }`}
-              aria-label="Plein Écran"
-              title="Plein Écran"
-            >
-              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            </button>
 
             {/* Bouton bascule recherche sur mobile */}
             <button
