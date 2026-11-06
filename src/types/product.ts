@@ -10,6 +10,7 @@ export interface RawArticle {
   n: string; // denomination
   e: string; // ean
   p: number; // pcb
+  a?: string[]; // eans alias / secondaires issus du serveur caisse
 }
 
 export type ScanMode = 'auto' | 'trigger';

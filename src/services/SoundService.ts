@@ -1,6 +1,10 @@
 class SoundService {
   private ctx: AudioContext | null = null;
 
+  public initAudio(): void {
+    this.getContext();
+  }
+
   private getContext(): AudioContext | null {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

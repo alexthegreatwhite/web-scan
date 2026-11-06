@@ -55,7 +55,7 @@ export class BarcodeService {
     // 1. Détecteur natif Chromium/Android
     if (typeof window !== 'undefined' && window.BarcodeDetector) {
       try {
-        const formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'];
+        const formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
         this.nativeDetector = new window.BarcodeDetector({ formats });
       } catch {
         this.nativeDetector = null;
@@ -70,7 +70,8 @@ export class BarcodeService {
       BarcodeFormat.UPC_A,
       BarcodeFormat.UPC_E,
       BarcodeFormat.CODE_128,
-      BarcodeFormat.CODE_39
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.ITF
     ];
     hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
     hints.set(DecodeHintType.TRY_HARDER, true);
@@ -105,8 +106,17 @@ export class BarcodeService {
 
       this.track = this.stream.getVideoTracks()[0] || null;
       if (this.track) {
-        const capabilities = (this.track.getCapabilities?.() || {}) as { torch?: boolean };
+        const capabilities = (this.track.getCapabilities?.() || {}) as { torch?: boolean; focusMode?: string[] };
         this.hasHardwareTorchSupport = !!capabilities.torch;
+
+        // Tente d'activer l'autofocus continu si supporté
+        if (capabilities.focusMode?.includes('continuous')) {
+          try {
+            await (this.track as unknown as { applyConstraints: (c: unknown) => Promise<void> }).applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            });
+          } catch {}
+        }
       }
     } catch (err) {
       console.error('Erreur démarrage caméra:', err);
@@ -182,7 +192,7 @@ export class BarcodeService {
   }
 
   /**
-   * Décodage d'une image avec conversion en luminance réelle (HTMLCanvasElementLuminanceSource)
+   * Décodage centré sur la zone de visée (ROI) pour maximiser les FPS et la réactivité
    */
   public async decodeSingleFrame(): Promise<string | null> {
     if (!this.videoEl || this.videoEl.readyState < 2) return null;
@@ -197,21 +207,17 @@ export class BarcodeService {
     }
     if (!this.ctx) return null;
 
-    // Résolution optimale pour décodage rapide et net (800px max)
-    const maxDim = 800;
-    let targetW = vw;
-    let targetH = vh;
-    if (targetW > maxDim) {
-      const scale = maxDim / targetW;
-      targetW = Math.floor(targetW * scale);
-      targetH = Math.floor(targetH * scale);
-    }
+    // Définir la zone centrale correspondant au viseur laser (75% largeur, 50% hauteur)
+    const cropW = Math.floor(vw * 0.75);
+    const cropH = Math.floor(vh * 0.50);
+    const cropX = Math.floor((vw - cropW) / 2);
+    const cropY = Math.floor((vh - cropH) / 2);
 
-    this.canvas.width = targetW;
-    this.canvas.height = targetH;
+    this.canvas.width = cropW;
+    this.canvas.height = cropH;
 
     try {
-      this.ctx.drawImage(this.videoEl, 0, 0, targetW, targetH);
+      this.ctx.drawImage(this.videoEl, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
     } catch {
       return null;
     }
@@ -236,7 +242,7 @@ export class BarcodeService {
         const text = res.getText()?.trim();
         if (text) return text;
       } catch {
-        // Normal : aucun code détecté sur cette frame
+        // Aucun code sur la zone rognée
       }
     }
 

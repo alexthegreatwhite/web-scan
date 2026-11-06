@@ -1,10 +1,38 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Source WMS files
-const WMS_DIR = 'C:\\Users\\Alex\\Desktop\\projet\\VERSION_TEST_HORS_LIGNE\\Offline_DB\\WMS';
-const FICHE_ARTICLE_PATH = path.join(WMS_DIR, 'FicheArticle.txt');
-const STOCK_DLUO_PATH = path.join(WMS_DIR, 'Stock_Dluo.txt');
+// Emplacements candidats pour les fichiers WMS Acteos
+const CANDIDATE_DIRS = [
+  'C:\\Users\\dam6.dam\\Documents\\projet 2\\VERSION_PRODUCTION_INTRANET\\TempSync',
+  'C:\\Users\\dam6.dam\\Documents\\projet 2\\VERSION_TEST_HORS_LIGNE\\Offline_DB\\WMS',
+  'C:\\Users\\dam6.dam\\Documents\\projet\\VERSION_TEST_HORS_LIGNE\\Offline_DB\\WMS',
+  path.resolve('./Offline_DB/WMS')
+];
+
+let ficheArticlePath = null;
+let stockDluoPath = null;
+
+for (const dir of CANDIDATE_DIRS) {
+  const fPath = path.join(dir, 'FicheArticle.txt');
+  if (fs.existsSync(fPath) && !ficheArticlePath) {
+    ficheArticlePath = fPath;
+  }
+  const sPath = path.join(dir, 'Stock_Dluo.txt');
+  if (fs.existsSync(sPath) && !stockDluoPath) {
+    stockDluoPath = sPath;
+  }
+}
+
+// Fallback secondaire pour Stock_Dluo si non trouvé dans le même dossier
+if (!stockDluoPath) {
+  for (const dir of CANDIDATE_DIRS) {
+    const sPath = path.join(dir, 'Stock_Dluo.txt');
+    if (fs.existsSync(sPath)) {
+      stockDluoPath = sPath;
+      break;
+    }
+  }
+}
 
 const PUBLIC_DATA_DIR = path.resolve('public/data');
 const OUTPUT_FILE = path.join(PUBLIC_DATA_DIR, 'catalog.json');
@@ -14,14 +42,16 @@ if (!fs.existsSync(PUBLIC_DATA_DIR)) {
 }
 
 console.log('Ingestion des catalogues WMS Paris Store...');
+console.log(`Source FicheArticle: ${ficheArticlePath}`);
+console.log(`Source Stock_Dluo: ${stockDluoPath}`);
 
-if (!fs.existsSync(FICHE_ARTICLE_PATH)) {
-  console.error(`Fichier manquant: ${FICHE_ARTICLE_PATH}`);
+if (!ficheArticlePath || !fs.existsSync(ficheArticlePath)) {
+  console.error('Erreur: FicheArticle.txt introuvable dans les chemins candidats.');
   process.exit(1);
 }
 
 // 1. Parser FicheArticle.txt (UTF-8)
-const rawFiche = fs.readFileSync(FICHE_ARTICLE_PATH, 'utf-8');
+const rawFiche = fs.readFileSync(ficheArticlePath, 'utf-8');
 const ficheLines = rawFiche.split(/\r?\n/);
 
 const articlesMap = new Map(); // code -> article
@@ -62,8 +92,8 @@ console.log(`FicheArticle.txt traité: ${ficheCount} articles indexés.`);
 
 // 2. Parser Stock_Dluo.txt (latin1 / ANSI) pour tolérance d'alignement WMS
 let wmsAutoCreated = 0;
-if (fs.existsSync(STOCK_DLUO_PATH)) {
-  const rawStock = fs.readFileSync(STOCK_DLUO_PATH, 'latin1');
+if (stockDluoPath && fs.existsSync(stockDluoPath)) {
+  const rawStock = fs.readFileSync(stockDluoPath, 'latin1');
   const stockLines = rawStock.split(/\r?\n/);
 
   for (let i = 0; i < stockLines.length; i++) {
@@ -71,7 +101,7 @@ if (fs.existsSync(STOCK_DLUO_PATH)) {
     if (!line) continue;
 
     const parts = line.split(';');
-    if (parts.length < 5) continue;
+    if (parts.length < 4) continue;
 
     const rawCode = parts[0]?.trim();
     if (!rawCode) continue;
@@ -113,6 +143,12 @@ console.log(`Tolérance WMS Stock_Dluo : ${wmsAutoCreated} articles authentiques
 // 3. Export JSON compact
 const catalogArray = Array.from(articlesMap.values());
 fs.writeFileSync(OUTPUT_FILE, JSON.stringify(catalogArray), 'utf-8');
+
+// Copie également dans dist/data si dist existe
+const distDataDir = path.resolve('dist/data');
+if (fs.existsSync(distDataDir)) {
+  fs.writeFileSync(path.join(distDataDir, 'catalog.json'), JSON.stringify(catalogArray), 'utf-8');
+}
 
 const stats = fs.statSync(OUTPUT_FILE);
 console.log(`Index généré avec succès dans ${OUTPUT_FILE}`);

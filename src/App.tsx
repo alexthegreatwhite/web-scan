@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { catalogService } from './services/CatalogService';
 import { soundService } from './services/SoundService';
-import { Article } from './types/product';
+import { Article, ScanMode } from './types/product';
 import { CameraScanner } from './components/CameraScanner';
 import { ProductCard } from './components/ProductCard';
 import { ManualInput } from './components/ManualInput';
-import { AlertCircle, Search, X } from 'lucide-react';
+import { AlertCircle, Search, X, Maximize, Minimize } from 'lucide-react';
 
 export function App() {
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -13,6 +13,43 @@ export function App() {
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>('auto');
+
+  // Déverrouillage audio sur la première interaction utilisateur
+  useEffect(() => {
+    const unlockAudio = () => {
+      soundService.initAudio();
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+    };
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  const toggleScanMode = () => {
+    setScanMode((prev) => (prev === 'auto' ? 'trigger' : 'auto'));
+  };
 
   // Initialisation du catalogue
   useEffect(() => {
@@ -49,13 +86,11 @@ export function App() {
       {/* En-tête mobile aéré et jamais écrasé */}
       <header className="relative z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          {/* Logo Panda Kawaii et Nom Magasin */}
+          {/* Logo et Nom Magasin */}
           <div className="flex items-center gap-2.5 min-w-0">
-            <img
-              src="./icons/icon-192.png"
-              alt="Logo Panda"
-              className="w-8 h-8 rounded-xl object-cover shadow-md shadow-pink-950/40 shrink-0"
-            />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-red-500 flex items-center justify-center font-black text-white text-sm shadow-md shadow-red-950/50 shrink-0">
+              PS
+            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 leading-none">
                 <span className="font-bold text-white text-sm tracking-tight truncate">Paris Store</span>
@@ -76,6 +111,20 @@ export function App() {
             <div className="hidden sm:block w-64">
               <ManualInput onSearch={handleCodeFound} disabled={!catalogLoaded} />
             </div>
+
+            {/* Bouton Plein Écran */}
+            <button
+              onClick={toggleFullscreen}
+              className={`p-2 rounded-xl border transition active:scale-95 ${
+                isFullscreen
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-bold'
+                  : 'bg-slate-900 text-slate-300 border-slate-700/80 hover:text-white'
+              }`}
+              aria-label="Plein Écran"
+              title="Plein Écran"
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
 
             {/* Bouton bascule recherche sur mobile */}
             <button
@@ -100,11 +149,13 @@ export function App() {
         )}
       </header>
 
-      {/* Zone Caméra centrale (Mode Auto uniquement) */}
+      {/* Zone Caméra centrale (Mode Auto & Mode Gâchette) */}
       <main className="relative flex-1 w-full h-full overflow-hidden">
         <CameraScanner
           onCodeScanned={handleCodeFound}
           isPaused={!!currentArticle}
+          scanMode={scanMode}
+          onToggleScanMode={toggleScanMode}
         />
 
         {/* Toast Code Inconnu */}
